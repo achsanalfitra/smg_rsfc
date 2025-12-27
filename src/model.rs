@@ -24,6 +24,7 @@ pub enum FileArenaOpCode {
 pub trait FileArenaMethods {
     fn new(max_offset: usize, file: File) -> FileArena;
     fn insert(&self, name: String, data: &[u8]) -> Result<RegisterRange, FileArenaOpCode>;
+    fn fetch(&self, name: String) -> Result<Vec<u8>, FileArenaOpCode>;
 }
 
 pub struct FileArena {
@@ -99,5 +100,38 @@ impl FileArenaMethods for FileArena {
         }
 
         Ok(range)
+    }
+
+    fn fetch(&self, name: String) -> Result<Vec<u8>, FileArenaOpCode> {
+        let range = {
+            let state = self.arena.lock().unwrap();
+
+            state
+                .registry
+                .get(&name)
+                .copied()
+                .ok_or(FileArenaOpCode::ErrorNoSpace)?
+        };
+
+        let offset = range.start;
+        let stride = range.end - offset;
+
+        let mut buffer = vec![0u8; stride];
+
+        #[cfg(unix)]
+        {
+            self.file_ptr
+                .read_exact_at(&mut buffer, offset as u64)
+                .map_err(|_| FileArenaOpCode::ErrorInvalidData)?;
+        }
+
+        #[cfg(windows)]
+        {
+            self.file_ptr
+                .seek_read(&mut buffer, offset)
+                .map_err(|_| FileArenaOpCode::ErrorInvalidData)?;
+        }
+
+        Ok(buffer)
     }
 }
