@@ -15,14 +15,10 @@ mod tests {
         fc.insert(key, data, Some(Instant::now() + Duration::from_secs(10)))
             .await;
 
-        match fc.get(key).await {
-            Ok(_get) => {
-                let _ = std::fs::remove_dir_all(path);
-                assert_eq!(_get, data);
-            }
-            _ => {
-                let _ = std::fs::remove_dir_all(path);
-            }
-        };
+        let result = fc.get(key).await;
+
+        let _ = std::fs::remove_dir_all(path);
+
+        assert_eq!(result.unwrap(), data);
     }
 }
