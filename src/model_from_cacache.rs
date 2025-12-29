@@ -88,4 +88,32 @@ impl CacheIntegrityMap {
 
         FileCacacheOpCode::Succes
     }
+
+    pub(crate) async fn rehydrate(&self) -> () {
+        let _lock = {
+            let mut map = self.map.lock().await;
+
+            let _hashes = cacache::list_sync(&self.path).for_each(|m| match m {
+                Ok(_m) => {
+                    map.insert(
+                        _m.key,
+                        ContentMetadata {
+                            hash: _m.integrity,
+                            timeout: Instant::now() + Duration::from_secs(10),
+                        },
+                    );
+                }
+                Err(_) => {
+                    println!("error")
+                }
+            });
+        };
+    }
+
+    pub(crate) fn list(&self) -> () {
+        let _hashes = cacache::list_sync(&self.path);
+        for a in _hashes {
+            println!("{:#?}", a);
+        }
+    }
 }
