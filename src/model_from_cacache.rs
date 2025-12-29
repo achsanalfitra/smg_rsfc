@@ -22,21 +22,21 @@ struct ContentMetadata {
 
 type FileMap = HashMap<String, ContentMetadata>;
 
-struct CacheIntegrityMap {
+pub struct CacheIntegrityMap {
     map: Arc<Mutex<FileMap>>,
 
     path: String,
 }
 
 impl CacheIntegrityMap {
-    fn new(path: &str) -> Self {
+    pub fn new(path: &str) -> Self {
         Self {
             map: Arc::new(Mutex::new(HashMap::new())),
             path: path.to_string(),
         }
     }
 
-    async fn get(&self, key: &str) -> Result<Vec<u8>, FileCacacheOpCode> {
+    pub async fn get(&self, key: &str) -> Result<Vec<u8>, FileCacacheOpCode> {
         let now = Instant::now();
         let mut hash_map = self.map.lock().await;
 
@@ -59,7 +59,12 @@ impl CacheIntegrityMap {
         }
     }
 
-    async fn insert(&self, key: &str, data: &[u8], timeout: Option<Instant>) -> FileCacacheOpCode {
+    pub async fn insert(
+        &self,
+        key: &str,
+        data: &[u8],
+        timeout: Option<Instant>,
+    ) -> FileCacacheOpCode {
         let _timeout = timeout.unwrap_or_else(|| Instant::now() + Duration::from_secs(10));
 
         let old_hash = self.map.lock().await.remove(key).map(|meta| meta.hash);
